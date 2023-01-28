@@ -36,7 +36,7 @@ Python3 test3q.py
 ```
 Please put the ply files to be processed in `indir`, set the `dracodir` as where you install Draco, and edit `modelpath` as the path of checkpoint. The point clouds will be encoded into binary code files in `bindir` and decompressed into point clouds again into `outdir`. Note the compression level could be adjusted by changing `level` from 1 to 8.
 Some decompressed samples under about 1bpp could be
-![image](https://github.com/Tianxinhuang/3QNet/blob/main/tog_quali.jpg)
+![image](https://github.com/Tianxinhuang/3QNet/blob/master/tog_quali.jpg)
 
 ## Citation
 If you find our work useful for your research, please cite:
