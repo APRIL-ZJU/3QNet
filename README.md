@@ -1,5 +1,5 @@
 # 3QNet
-The codes for 3QNet: 3D Point Cloud Geometry Quantization Compression Network published in ACM TRANSACTIONS ON GRAPHICS.
+[SIGGRAPH Asia 2022/TOG] The codes for 3QNet: 3D Point Cloud Geometry Quantization Compression Network published in ACM TRANSACTIONS ON GRAPHICS.
 
 ## Environment
 * TensorFlow 1.13.1
