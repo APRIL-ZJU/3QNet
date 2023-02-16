@@ -4,13 +4,15 @@ import os
 from sklearn.cluster import KMeans
 import multiprocessing as mp
 import scipy.io
+import time
+import open3d as o3d
 def getdir():
     #BASE_DIR=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     BASE_DIR='./'
     DATA_DIR=os.path.join(BASE_DIR,'data')
     return DATA_DIR
 def getspdir():
-    BASE_DIR='./'
+    BASE_DIR='../../'
     DATA_DIR=os.path.join(BASE_DIR,'data')
     DATA_DIR=os.path.join(DATA_DIR,'hdf5_data')
     #print(DATA_DIR)
@@ -67,6 +69,18 @@ def ocdev(data,tnum=2):
             dataijk=data[xid & yid & zid2]
             result.append(dataijk)
     return result
+def downsam(data,dtype='u',num=10,gridsize=1):
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(data)
+    if dtype=='u':
+        pcd1=o3d.geometry.PointCloud.uniform_down_sample(pcd,num)
+        #pcd1=data.sample_points_poisson_disk(num,pcl=pcd)
+    elif dtype=='f':
+        pcd1=fps_filter(data,num)
+        return pcd1
+    else:
+        pcd1=o3d.geometry.PointCloud.voxel_down_sample(pcd,gridsize)
+    return pcd1.points
 def get_part_cens(data,tnum,ptnum,scale,cennum):
     datanum=np.shape(data)[0]
     #print(datanum)
@@ -82,6 +96,21 @@ def get_part_cens(data,tnum,ptnum,scale,cennum):
         #assert False
         cens=np.array(downsam(data,'u',num=datanum//cennum,gridsize=length/512))
     return cens
+#result={}
+def add2dict(hdata,tid,cens,start=0):
+    results={}
+    #hdata=data[tid*interval:(1+tid)*interval]
+    dismat=np.sqrt(np.sum(np.square(np.expand_dims(hdata,axis=1)-np.expand_dims(cens,axis=0)),axis=-1))
+
+    minids=np.argmin(dismat,axis=1)#+start
+
+    for i in range(np.shape(hdata)[0]):
+        minid=minids[i]
+        if minid not in results.keys():
+            results[minid]=[hdata[i,:]]
+        else:
+            results[minid].append(hdata[i,:])
+    return results
 def getcennum(datas,cennum):
     cennums=[]
     lengths=np.zeros(len(datas))
@@ -97,7 +126,67 @@ def getcennum(datas,cennum):
     cennums=cennum*lengths/sum(lengths)
     cennums=cennums.astype(np.int32)
     return cennums
-def get_part_data(data,ptnum,split='train',centype='r',scale=2.5):
+def get_part_data(data,ptnum,split='train',centype='r',sparse=False,scale=0.5):
+    #data=get_scannet(rootpath,idx,split='train')
+    stime=time.time()
+    datanum=np.shape(data)[0]
+    cennum=int(datanum/ptnum)+1
+    length=np.max(np.max(data,axis=0)-np.min(data,axis=0))
+
+    if centype is 'r':
+        ndata=data[np.random.choice(datanum,2048*4,replace=False)]
+        cennum=int(cennum*scale)
+        cens=KMeans(n_clusters=cennum, random_state=1, n_init=10,max_iter=300, init='k-means++',tol=1e-4).fit(ndata)
+        cens=cens.cluster_centers_
+        etime1=time.time()
+    result={}
+    threads=[]
+    tnum=8
+    interval=datanum//(tnum-1)
+    ttime=time.time()
+    manager=mp.Manager()
+    #result=manager.dict()
+    #q=manager.Queue()
+    p=mp.Pool(tnum)
+    for i in range(tnum):
+        thread=p.apply_async(add2dict,args=(data[i*interval:(1+i)*interval],i,cens))
+        threads.append(thread)
+    p.close()
+    p.join()
+    for t in threads:
+        #result=dict(list(result.items())+list(t.get().items()))
+        res=t.get()
+        for k in np.unique(list(res.keys())+list(result.keys())):
+            if k not in result.keys():
+                result[k]=res[k]
+            elif k in res.keys():
+                result[k]=result[k]+res[k]
+    ttime2=time.time()
+    data=[]
+
+    for i in result.keys():
+        datai=result[i]
+        #print(len(datai))
+        #datai=downsam(datai,'u',num=int(len(datai)/1024),gridsize=length/512)
+        if len(datai)>ptnum:
+            idx=np.random.choice(len(datai),ptnum,replace=False)
+            datai=np.expand_dims(np.array(datai)[idx,:],axis=0)
+        else:
+            idx=np.random.choice(len(datai),ptnum-len(datai),replace=True)
+            #print(np.shape(datai),np.shape(idx))
+            idx=np.concatenate([np.array(range(len(datai))),idx],axis=0)
+            datai=np.expand_dims(np.array(datai)[idx,:],axis=0)
+        data.append(datai)
+    etime2=time.time()
+    data=np.concatenate(data,axis=0)[:,:,:3]
+    dmax=np.max(data,axis=1,keepdims=True)
+    dmin=np.min(data,axis=1,keepdims=True)
+    length=(dmax-dmin)/2#+1e-8
+    center=(dmax+dmin)/2
+    data=(data-center)/(length+1e-8)#np.max(length,axis=-1,keepdims=True)
+    return data,length,center
+
+def get_part_data_multiprocess(data,ptnum,split='train',centype='r',scale=2.5):
     stime=time.time()
     datanum=np.shape(data)[0]
     cennum=int(datanum/ptnum)+1
@@ -141,7 +230,7 @@ def get_part_data(data,ptnum,split='train',centype='r',scale=2.5):
             else:
                 result[k]=result[k]+res[k]
     ttime2=time.time()
-    print(ttime2-ttime)
+    #print(ttime2-ttime)
 
     for i in result.keys():
         datai=result[i]

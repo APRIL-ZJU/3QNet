@@ -1,4 +1,4 @@
-from 3qnet import encoder,progress_decode,chamfer_big,get_prob,sampling,word2code,code2word,get_topk
+from qnet import encoder,progress_decode,chamfer_big,get_prob,sampling,word2code,code2word,get_topk
 import os
 import getdata#2 as getdata
 import tensorflow as tf
@@ -72,10 +72,10 @@ def qcom(indir,filedir,outdir,level=6,dracodir='./',modelpath='./'):
     rfeat1,rfeat2,rfeat3,rfeat4=feats
 
     
-    idx1,featscode1,featpool1=word2code(rfeat1,knum,1,32,None,None)
-    idx2,featscode2,featpool2=word2code(rfeat2,knum,2,128,None,None)
-    idx3,featscode3,featpool3=word2code(rfeat3,knum,3,256,None,None)
-    idx4,featscode4,featpool4=word2code(rfeat4,knum,4,256,None,None)
+    idx1,featscode1,featpool1=word2code(rfeat1,1,32,None,None,True)
+    idx2,featscode2,featpool2=word2code(rfeat2,2,128,None,None,True)
+    idx3,featscode3,featpool3=word2code(rfeat3,3,256,None,None,True)
+    idx4,featscode4,featpool4=word2code(rfeat4,4,256,None,None,True)
 
     ids=[idx1,idx2,idx3,idx4]
     pools=[featpool1,featpool2,featpool3,featpool4]
@@ -261,6 +261,6 @@ if __name__=='__main__':
     bindir='./bins'
     outdir='./outs'
     level=5#1 to 8
-    dracodir='./draco_build/'
-    modelpath='./model'
+    dracodir='./draco/draco_build/'
+    modelpath='./pretrained'
     qcom(indir,bindir,outdir,level,dracodir,modelpath)#compress models in indir to binary codes in bindir, and decompression them back to outdir

@@ -9,6 +9,8 @@ The codes for 3QNet: 3D Point Cloud Geometry Quantization Compression Network pu
 * Sklearn
 * Draco
 * h5py
+* bitarray
+* Open3D
 
 ## Dataset
 The adopted object models, indoor scenes, and outdoor scenes can be found in [Visionair](https://github.com/yulequan/PU-Net), [Scannet](https://github.com/charlesq34/pointnet2), [Kitti](https://github.com/PRBonn/semantic-kitti-api).
@@ -35,7 +37,9 @@ Note that the training h5 data should be put under `./data`. The path for saved 
 Python3 test3q.py
 ```
 Please put the ply files to be processed in `indir`, set the `dracodir` as where you install Draco, and edit `modelpath` as the path of checkpoint. The point clouds will be encoded into binary code files in `bindir` and decompressed into point clouds again into `outdir`. Note the compression level could be adjusted by changing `level` from 1 to 8.
+
 Some decompressed samples under about 1bpp could be
+
 ![image](https://github.com/Tianxinhuang/3QNet/blob/master/tog_quali.jpg)
 
 ## Citation
