@@ -1,4 +1,4 @@
-# RFNet
+# 3QNet
 The codes for 3QNet: 3D Point Cloud Geometry Quantization Compression Network published in ACM TRANSACTIONS ON GRAPHICS.
 
 ## Environment
